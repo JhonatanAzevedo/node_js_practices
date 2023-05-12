@@ -1,6 +1,7 @@
 import inquirer from 'inquirer'
 import chalk from 'chalk'
 import fs from 'fs'
+import { error } from 'console'
 
 operation()
 
@@ -92,8 +93,20 @@ function deposit() {
         //verify account exist
         if (!checkAccount(accountName)) {
             return deposit()
-
         }
+
+        inquirer.prompt([{
+            name: 'amount',
+            message: 'Quanto voce deseja depositar?'
+        }]).then(((answer) => {
+
+            const amount = answer['amount']
+
+            //add an amount
+            addAmount(accountName, amount)
+            operation()
+
+        })).catch((error) => console.log(error))
 
     }).catch((error) => {
         console.log(error)
@@ -108,4 +121,32 @@ function checkAccount(accountName) {
     }
     return true
 
+}
+
+function addAmount(accountName, amount) {
+    const accountData = getAccount(accountName)
+
+    if (!amount) {
+        console.log(chalk.bgRed.black('Ocorreu um erro'))
+        return deposit()
+    }
+
+    accountData.balance = parseFloat(amount) + parseFloat(accountData.balance)
+
+    fs.writeFileSync(`accounts/${accountName}.json`,
+        JSON.stringify(accountData),
+        function (error) {
+            console.log(error)
+        },
+    )
+    console.log(chalk.green(`Foi depositado o valor de R$${amount} na sua conta!`))
+}
+
+function getAccount(accountName) {
+    const accountJson = fs.readFileSync(`accounts/${accountName}.json`, {
+        encoding: 'utf8',
+        flag: 'r'
+    })
+
+    return JSON.parse(accountJson)
 }
